@@ -5,6 +5,7 @@ import logging
 
 from confluent_kafka import Consumer
 from fastapi import FastAPI
+from fastapi.responses import PlainTextResponse
 from jinja2 import Template
 import uvicorn
 
@@ -81,7 +82,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
-@app.get("/metrics")
+@app.get("/metrics", response_class=PlainTextResponse)
 async def metrics():
     metrics_dict = json.loads(metrics)
     return gen_str(metrics_dict)
