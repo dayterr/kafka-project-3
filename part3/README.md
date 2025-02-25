@@ -1,4 +1,6 @@
-Эксперимент	batch.size	linger.ms	compression.type	buffer.memory	Source Record Write Rate (кops/sec)
-1	500	1000	none	33554432	7.88
-2	500	1000	snappy	33554432	4.86
-3	1000 1000	none	33554432	9.30
+вывод после выполнения команды
+`curl -X PUT -H 'Content-Type: application/json' --data @connector.json http://localhost:8083/connectors/pg-connector/config`
+
+```
+{"name":"pg-connector","config":{"name":"pg-connector","connector.class":"io.debezium.connector.postgresql.PostgresConnector","database.hostname":"postgres","database.port":"5432","database.user":"postgres-user","database.password":"postgres-pw","database.dbname":"customers","database.server.name":"customers","table.whitelist":"public.customers","transforms":"unwrap","transforms.unwrap.type":"io.debezium.transforms.ExtractNewRecordState","transforms.unwrap.drop.tombstones":"false","transforms.unwrap.delete.handling.mode":"rewrite","topic.prefix":"customers","topic.creation.enable":"true","topic.creation.default.replication.factor":"-1","topic.creation.default.partitions":"-1","skipped.operations":"none"},"tasks":[],"type":"source"}
+```
