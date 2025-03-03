@@ -6,28 +6,29 @@ import logging
 from confluent_kafka import Consumer
 from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
-from jinja2 import Template
 import uvicorn
 
 TOPIC = 'metrics'
-TIMEOUT = 30 * 60
+TEST = 'test'
+TIMEOUT = 1
 metrics = {}
+priorities = []
 lock = asyncio.Lock()
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
-logger.info('filtered messages consumer started')
+logger.info('metrics consumer started')
 
 conf = {
-    "group.id": 'filtered',
-    "bootstrap.servers": "kafka-0:9092",
-    "auto.offset.reset": "earliest",
+    "group.id": 'metrics',
+    "bootstrap.servers": "kafka-0:9092,kafka-1:9092,kafka-2:9092",
+    "auto.offset.reset": "latest",
     "enable.auto.commit": "true",
-    "fetch.min.bytes": 1024,
+    "fetch.min.bytes": 512,
 }
 
 consumer = Consumer(conf)
-consumer.subscribe([TOPIC])
+consumer.subscribe([TOPIC, TEST])
 
 
 def gen_str(metrics: dict) -> str:
@@ -41,7 +42,7 @@ def gen_str(metrics: dict) -> str:
 async def read_metrics(consumer: Consumer) -> None:
     try:
         while True:
-            msg = consumer.poll(timeout=TIMEOUT)
+            msg = consumer.poll()
 
             if msg is None:
                 continue
@@ -49,11 +50,17 @@ async def read_metrics(consumer: Consumer) -> None:
                 logger.error(f'получена ошибка: {msg.error()}')
                 continue
 
-            logger.info(f'полученое сообщение: {msg.value().decode("utf-8")}')
+            logger.info(f'полученое сообщение: {msg.value().decode("utf-8")} из топика {msg.topic()}')
 
-            async with lock:
-                global metrics
-                metrics = msg.value().decode("utf-8")
+            
+            if msg.topic() == TOPIC:
+                async with lock:
+                    global metrics
+                    metrics = msg.value().decode("utf-8")
+            if msg.topic() == TEST:
+                async with lock:
+                    global priorities
+                    priorities.append(msg.value().decode("utf-8"))
 
             break
 
@@ -67,7 +74,7 @@ async def read_metrics(consumer: Consumer) -> None:
 async def run_scheduler(consumer: Consumer):
     while True:
         await read_metrics(consumer)
-        await asyncio.sleep(TIMEOUT + 5)
+        await asyncio.sleep(TIMEOUT)
 
 
 @asynccontextmanager
@@ -84,6 +91,9 @@ app = FastAPI(lifespan=lifespan)
 
 @app.get("/metrics", response_class=PlainTextResponse)
 async def metrics():
+    if priorities:
+        pr_json = gen_str(json.loads(priorities.pop(0)))
+        return pr_json
     metrics_dict = json.loads(metrics)
     return gen_str(metrics_dict)
 
