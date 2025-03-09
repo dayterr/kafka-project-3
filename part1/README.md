@@ -8,7 +8,8 @@
 увеличение параметров batch.size и linger.ms даёт прирост в скорости записи, однако нужно учитывать, что могут тратиться ресурсы кластера.
 
 как проверить:
-1. в папке /kafka-project-3/part1/grafana/dashboards лежит файл connect.json, его нужно подгрузить в Grafana, если он окажется не подгружен при запуске.
+1. в папке /kafka-project-3/part1/grafana/dashboards лежит файл connect.json, его нужно подгрузить в Grafana, если он окажется не подгружен при запуске. Нужный дашборд, если уже подгружен, называется 
+Kafka Connect Overview-0.
 2. создать таблицу people, команда:
 ```
 CREATE TABLE IF NOT EXISTS people (
